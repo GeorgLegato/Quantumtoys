@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Tetris ⚛️🧱</title>
+    <style>
+        :root {
+            --bg-dark: #050510;
+            --bg-card: #0a0a1f;
+            --accent: #00ffff;
+            --accent2: #ff00ff;
+            --accent3: #00ff88;
+            --accent4: #ffaa00;
+            --text: #e0e0e0;
+            --grid-line: #1a1a3a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-image: 
+                radial-gradient(ellipse at 20% 20%, rgba(0, 255, 255, 0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(255, 0, 255, 0.05) 0%, transparent 50%);
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            padding: 8px 20px;
+            flex-shrink: 0;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #666;
+            font-style: italic;
+            font-size: 0.85rem;
+        }
+
+        .game-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 10px 20px;
+            gap: 15px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        /* Game Board */
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .game-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            width: 100%;
+        }
+
+        .board-wrapper {
+            position: relative;
+            border: 3px solid var(--accent);
+            border-radius: 5px;
+            box-shadow: 
+                0 0 30px rgba(0, 255, 255, 0.3),
+                inset 0 0 30px rgba(0, 255, 255, 0.1);
+        }
+
+        #gameBoard {
+            display: grid;
+            grid-template-columns: repeat(10, 30px);
+            grid-template-rows: repeat(20, 30px);
+            gap: 1px;
+            background: var(--grid-line);
+        }
+
+        .cell {
+            width: 30px;
+            height: 30px;
+            background: var(--bg-dark);
+            position: relative;
+            transition: background 0.1s;
+        }
+
+        .cell.filled {
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.2);
+        }
+
+        .cell.ghost {
+            opacity: 0.3;
+        }
+
+        .cell.superposed {
+            animation: shimmer 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes shimmer {
+            0% { opacity: 0.4; }
+            100% { opacity: 0.8; }
+        }
+
+        .cell.quantum-line {
+            animation: quantumPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes quantumPulse {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.5) hue-rotate(30deg); }
+        }
+
+        /* Side Panels */
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 220px;
+            max-height: calc(100vh - 80px);
+            overflow-y: auto;
+        }
+
+        .side-panel::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .side-panel::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 2px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: 8px;
+            padding: 10px;
+            border: 1px solid #222;
+        }
+
+        .card h2 {
+            color: var(--accent);
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Horizontal info panels */
+        .info-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .info-row .card {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        /* Next Piece Preview */
+        .preview-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .preview-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 8px;
+            min-height: 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 14px);
+            grid-template-rows: repeat(4, 14px);
+            gap: 1px;
+        }
+
+        .preview-cell {
+            width: 14px;
+            height: 14px;
+            background: transparent;
+            border-radius: 2px;
+        }
+
+        .preview-label {
+            font-size: 0.65rem;
+            color: #888;
+            margin-top: 3px;
+        }
+
+        /* Quantum State Display */
+        .quantum-state {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .state-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .state-shape {
+            width: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .state-bar {
+            flex: 1;
+            height: 16px;
+            background: #1a1a2e;
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .state-fill {
+            height: 100%;
+            transition: width 0.3s ease, background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 4px;
+            font-size: 0.65rem;
+            color: #000;
+            font-weight: bold;
+        }
+
+        .phase-indicator {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid var(--accent2);
+            position: relative;
+        }
+
+        .phase-arrow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 6px;
+            height: 2px;
+            background: var(--accent2);
+            transform-origin: left center;
+        }
+
+        /* Controls */
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+        }
+
+        .controls button {
+            padding: 6px 4px;
+            font-size: 0.7rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: bold;
+        }
+
+        .controls button:hover:not(:disabled) {
+            transform: scale(1.05);
+        }
+
+        .controls button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-quantum {
+            background: linear-gradient(135deg, var(--accent), #0088aa);
+            color: #000;
+        }
+
+        .btn-gate {
+            background: linear-gradient(135deg, var(--accent2), #aa0088);
+            color: #fff;
+        }
+
+        .btn-action {
+            background: linear-gradient(135deg, var(--accent3), #00aa66);
+            color: #000;
+        }
+
+        .btn-special {
+            background: linear-gradient(135deg, var(--accent4), #cc8800);
+            color: #000;
+        }
+
+        .wide-btn {
+            grid-column: span 3;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+
+        .stat {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 6px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .stat-label {
+            font-size: 0.6rem;
+            color: #888;
+        }
+
+        /* Mode Selection */
+        .mode-select {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .mode-btn {
+            flex: 1;
+            min-width: 80px;
+            padding: 8px;
+            font-size: 0.75rem;
+            border: 2px solid #333;
+            background: transparent;
+            color: var(--text);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            border-color: var(--accent);
+            background: rgba(0, 255, 255, 0.1);
+        }
+
+        .mode-btn:hover {
+            border-color: var(--accent);
+        }
+
+        /* Entanglement Indicator */
+        .entangle-display {
+            background: rgba(255, 0, 255, 0.1);
+            border: 1px solid var(--accent2);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+
+        .entangle-display.active {
+            animation: entanglePulse 1s ease-in-out infinite;
+        }
+
+        @keyframes entanglePulse {
+            0%, 100% { box-shadow: 0 0 5px var(--accent2); }
+            50% { box-shadow: 0 0 20px var(--accent2); }
+        }
+
+        /* Log */
+        .log-card {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .log {
+            flex: 1;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            padding: 6px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.65rem;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #222;
+        }
+
+        .log-quantum { color: var(--accent); }
+        .log-collapse { color: var(--accent2); }
+        .log-clear { color: var(--accent3); }
+        .log-entangle { color: var(--accent4); }
+
+        /* Game Over Overlay */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .overlay.active {
+            display: flex;
+        }
+
+        .overlay-content {
+            background: var(--bg-card);
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            border: 2px solid var(--accent);
+            max-width: 400px;
+        }
+
+        .overlay-title {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .overlay-stats {
+            margin: 20px 0;
+            font-size: 1.1rem;
+        }
+
+        .overlay button {
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            background: linear-gradient(135deg, var(--accent), #0088aa);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Keyboard hints */
+        .keyboard-hints {
+            font-size: 0.6rem;
+            color: #666;
+            line-height: 1.4;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px 15px;
+        }
+
+        .keyboard-hints span {
+            white-space: nowrap;
+        }
+
+        .key {
+            background: #333;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        /* Tetromino Colors - Brighter */
+        .color-I { background: linear-gradient(135deg, #00ffff, #00cccc) !important; }
+        .color-O { background: linear-gradient(135deg, #ffff44, #dddd00) !important; }
+        .color-T { background: linear-gradient(135deg, #dd44ff, #aa00dd) !important; }
+        .color-S { background: linear-gradient(135deg, #44ff44, #00dd00) !important; }
+        .color-Z { background: linear-gradient(135deg, #ff4444, #dd0000) !important; }
+        .color-J { background: linear-gradient(135deg, #4488ff, #0044dd) !important; }
+        .color-L { background: linear-gradient(135deg, #ffaa44, #dd7700) !important; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⚛️ Quantum Tetris 🧱</h1>
+        <span class="subtitle">Where Tetrominoes Exist in Superposition Until Observed</span>
+    </div>
+
+    <div class="game-wrapper">
+        <!-- Left Panel -->
+        <div class="side-panel">
+            <!-- Quantum State -->
+            <div class="card">
+                <h2>📊 Current Piece |ψ⟩</h2>
+                <div class="quantum-state" id="quantumState">
+                    <!-- Filled dynamically -->
+                </div>
+            </div>
+
+            <!-- Quantum Controls -->
+            <div class="card">
+                <h2>⚛️ Quantum Gates</h2>
+                <div class="controls">
+                    <button class="btn-gate" onclick="applyGate('H')" title="Hadamard - Mix probabilities">H</button>
+                    <button class="btn-gate" onclick="applyGate('X')" title="X Gate - Swap dominant states">X</button>
+                    <button class="btn-gate" onclick="applyGate('Z')" title="Z Gate - Phase flip">Z</button>
+                    <button class="btn-quantum" onclick="applyGate('Ry')" title="Rotate probabilities">Ry(θ)</button>
+                    <button class="btn-quantum" onclick="applyGate('Rz')" title="Rotate phases">Rz(φ)</button>
+                    <button class="btn-special" onclick="applyGate('CNOT')" title="Entangle with next piece">CNOT</button>
+                    <button class="btn-action wide-btn" onclick="measureEarly()">👁️ Early Measurement (Collapse Now)</button>
+                </div>
+            </div>
+
+            <!-- Entanglement -->
+            <div class="card">
+                <h2>🔗 Entanglement Status</h2>
+                <div class="entangle-display" id="entangleDisplay">
+                    No active entanglement
+                </div>
+            </div>
+
+            <!-- Mode Selection -->
+            <div class="card">
+                <h2>🎮 Quantum Mode</h2>
+                <div class="mode-select">
+                    <button class="mode-btn active" data-mode="copenhagen" onclick="setMode('copenhagen')">Copenhagen</button>
+                    <button class="mode-btn" data-mode="manyworlds" onclick="setMode('manyworlds')">Many-Worlds</button>
+                    <button class="mode-btn" data-mode="chaos" onclick="setMode('chaos')">Chaos</button>
+                </div>
+            </div>
+
+            <!-- Keyboard Hints -->
+            <div class="card">
+                <h2>⌨️ Controls</h2>
+                <div class="keyboard-hints">
+                    <span><span class="key">←→</span> Move</span>
+                    <span><span class="key">↑</span> Rotate</span>
+                    <span><span class="key">↓</span> Drop</span>
+                    <span><span class="key">Space</span> Hard</span>
+                    <span><span class="key">H</span> Hadamard</span>
+                    <span><span class="key">X</span> X-Gate</span>
+                    <span><span class="key">Z</span> Z-Gate</span>
+                    <span><span class="key">R</span> Ry</span>
+                    <span><span class="key">E</span> CNOT</span>
+                    <span><span class="key">M</span> Measure</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Board -->
+        <div class="game-container">
+            <div class="game-controls">
+                <button class="btn-action" onclick="startGame()" id="startBtn">▶️ Start</button>
+                <button class="btn-quantum" onclick="togglePause()" id="pauseBtn" disabled>⏸️ Pause</button>
+                <button class="btn-gate" onclick="resetGame()">🔄 Reset</button>
+            </div>
+            <div class="board-wrapper">
+                <div id="gameBoard">
+                    <!-- 200 cells generated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="side-panel">
+            <!-- Next Piece -->
+            <div class="card">
+                <h2>🔮 Next Piece</h2>
+                <div class="preview-container">
+                    <div class="preview-box">
+                        <div class="preview-grid" id="nextPreview"></div>
+                        <div class="preview-label" id="nextLabel">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="card">
+                <h2>📈 Statistics</h2>
+                <div class="stats-grid">
+                    <div class="stat">
+                        <div class="stat-value" id="statScore">0</div>
+                        <div class="stat-label">Score</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="statLines">0</div>
+                        <div class="stat-label">Lines</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="statLevel">1</div>
+                        <div class="stat-label">Level</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="statCollapses">0</div>
+                        <div class="stat-label">Collapses</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Log -->
+            <div class="card log-card">
+                <h2>📜 Quantum Log</h2>
+                <div class="log" id="eventLog"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div class="overlay" id="gameOverlay">
+        <div class="overlay-content">
+            <div class="overlay-title">QUANTUM COLLAPSE</div>
+            <p>The wavefunction has fully decoheced!</p>
+            <div class="overlay-stats">
+                <p>Final Score: <strong id="finalScore">0</strong></p>
+                <p>Lines Cleared: <strong id="finalLines">0</strong></p>
+                <p>Total Collapses: <strong id="finalCollapses">0</strong></p>
+            </div>
+            <button onclick="resetGame()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // QUANTUM TETRIS ENGINE
+        // ============================================
+
+        // Tetromino definitions (relative positions)
+        const TETROMINOES = {
+            I: { shape: [[0,0], [0,1], [0,2], [0,3]], color: 'color-I', name: 'I' },
+            O: { shape: [[0,0], [0,1], [1,0], [1,1]], color: 'color-O', name: 'O' },
+            T: { shape: [[0,1], [1,0], [1,1], [1,2]], color: 'color-T', name: 'T' },
+            S: { shape: [[0,1], [0,2], [1,0], [1,1]], color: 'color-S', name: 'S' },
+            Z: { shape: [[0,0], [0,1], [1,1], [1,2]], color: 'color-Z', name: 'Z' },
+            J: { shape: [[0,0], [1,0], [1,1], [1,2]], color: 'color-J', name: 'J' },
+            L: { shape: [[0,2], [1,0], [1,1], [1,2]], color: 'color-L', name: 'L' }
+        };
+
+        const TETRO_KEYS = Object.keys(TETROMINOES);
+        const BOARD_WIDTH = 10;
+        const BOARD_HEIGHT = 20;
+
+        // Game State
+        let game = {
+            board: [],
+            running: false,
+            paused: false,
+            score: 0,
+            lines: 0,
+            level: 1,
+            collapses: 0,
+            mode: 'copenhagen',
+            dropInterval: 1000,
+            lastDrop: 0,
+            animationId: null
+        };
+
+        // Current piece quantum state
+        let currentPiece = {
+            amplitudes: [], // Array of { type, amplitude, phase }
+            x: 0,
+            y: 0,
+            rotation: 0,
+            collapsed: false,
+            collapsedType: null
+        };
+
+        // Next piece quantum state
+        let nextPiece = {
+            amplitudes: []
+        };
+
+        // Entanglement state
+        let entanglement = {
+            active: false,
+            correlations: [] // [{type1, type2, probability}]
+        };
+
+        // Quantum line states (for superposed lines)
+        let quantumLines = {}; // row -> { probability: 0-1 }
+
+        // Initialize game board
+        function initBoard() {
+            const boardEl = document.getElementById('gameBoard');
+            boardEl.innerHTML = '';
+            game.board = [];
+
+            for (let y = 0; y < BOARD_HEIGHT; y++) {
+                game.board[y] = [];
+                for (let x = 0; x < BOARD_WIDTH; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.id = `cell-${y}-${x}`;
+                    boardEl.appendChild(cell);
+                    game.board[y][x] = null;
+                }
+            }
+
+            // Init next preview
+            const previewEl = document.getElementById('nextPreview');
+            previewEl.innerHTML = '';
+            for (let i = 0; i < 16; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'preview-cell';
+                cell.id = `preview-${Math.floor(i/4)}-${i%4}`;
+                previewEl.appendChild(cell);
+            }
+        }
+
+        // Generate quantum piece (superposition of shapes)
+        function generateQuantumPiece() {
+            const numStates = 3 + Math.floor(Math.random() * 3); // 3-5 states in superposition
+            const selectedTypes = [];
+            const shuffled = [...TETRO_KEYS].sort(() => Math.random() - 0.5);
+            
+            for (let i = 0; i < numStates && i < shuffled.length; i++) {
+                selectedTypes.push(shuffled[i]);
+            }
+
+            // Generate random amplitudes (not normalized yet)
+            let amplitudes = selectedTypes.map(type => ({
+                type,
+                amplitude: Math.random() + 0.1,
+                phase: Math.random() * 360
+            }));
+
+            // Normalize
+            const norm = Math.sqrt(amplitudes.reduce((sum, a) => sum + a.amplitude * a.amplitude, 0));
+            amplitudes.forEach(a => a.amplitude /= norm);
+
+            // Sort by probability
+            amplitudes.sort((a, b) => b.amplitude - a.amplitude);
+
+            return { amplitudes };
+        }
+
+        // Apply entanglement correlations if active
+        function applyEntanglement(piece) {
+            if (!entanglement.active || entanglement.correlations.length === 0) return piece;
+
+            const corr = entanglement.correlations[0];
+            // Force correlation based on previous collapse
+            if (corr.collapsed) {
+                // Adjust probabilities based on correlation
+                const targetType = corr.type2;
+                piece.amplitudes = piece.amplitudes.map(a => ({
+                    ...a,
+                    amplitude: a.type === targetType ? 0.9 : 0.1 / (piece.amplitudes.length - 1)
+                }));
+                
+                // Renormalize
+                const norm = Math.sqrt(piece.amplitudes.reduce((sum, a) => sum + a.amplitude * a.amplitude, 0));
+                piece.amplitudes.forEach(a => a.amplitude /= norm);
+
+                logEvent('entangle', `Entanglement collapsed: |${corr.type1}⟩ → |${targetType}⟩`);
+                entanglement.active = false;
+                updateEntanglementDisplay();
+            }
+
+            return piece;
+        }
+
+        // Spawn new piece
+        function spawnPiece() {
+            if (nextPiece.amplitudes.length === 0) {
+                nextPiece = generateQuantumPiece();
+            }
+
+            currentPiece = {
+                ...nextPiece,
+                x: 3,
+                y: 0,
+                rotation: 0,
+                collapsed: false,
+                collapsedType: null
+            };
+
+            // Apply entanglement if active
+            currentPiece = applyEntanglement(currentPiece);
+
+            nextPiece = generateQuantumPiece();
+
+            updateQuantumStateDisplay();
+            updateNextPreview();
+
+            logEvent('quantum', `New piece spawned: |ψ⟩ = ${formatQuantumState(currentPiece.amplitudes)}`);
+
+            // Check if spawn position is blocked
+            if (!isValidPosition(currentPiece.x, currentPiece.y)) {
+                gameOver();
+            }
+        }
+
+        // Format quantum state as string
+        function formatQuantumState(amplitudes) {
+            return amplitudes.slice(0, 3).map(a => 
+                `${(a.amplitude * a.amplitude * 100).toFixed(0)}%|${a.type}⟩`
+            ).join(' + ') + (amplitudes.length > 3 ? ' + ...' : '');
+        }
+
+        // Update quantum state display
+        function updateQuantumStateDisplay() {
+            const container = document.getElementById('quantumState');
+            container.innerHTML = '';
+
+            const amps = currentPiece.collapsed ? 
+                [{ type: currentPiece.collapsedType, amplitude: 1, phase: 0 }] :
+                currentPiece.amplitudes;
+
+            amps.forEach(a => {
+                const prob = (a.amplitude * a.amplitude * 100).toFixed(1);
+                const color = TETROMINOES[a.type].color;
+                
+                const row = document.createElement('div');
+                row.className = 'state-row';
+                row.innerHTML = `
+                    <div class="state-shape">${a.type}</div>
+                    <div class="state-bar">
+                        <div class="state-fill ${color}" style="width: ${prob}%">${prob}%</div>
+                    </div>
+                    <div class="phase-indicator">
+                        <div class="phase-arrow" style="transform: rotate(${a.phase}deg)"></div>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        // Update next piece preview
+        function updateNextPreview() {
+            // Clear preview
+            for (let y = 0; y < 4; y++) {
+                for (let x = 0; x < 4; x++) {
+                    const cell = document.getElementById(`preview-${y}-${x}`);
+                    cell.className = 'preview-cell';
+                    cell.style.opacity = '';
+                }
+            }
+
+            // Show superposed preview (blended)
+            const dominantTypes = nextPiece.amplitudes.slice(0, 3);
+            
+            dominantTypes.forEach(({ type, amplitude }) => {
+                const shape = TETROMINOES[type].shape;
+                const color = TETROMINOES[type].color;
+                
+                shape.forEach(([dy, dx]) => {
+                    const cell = document.getElementById(`preview-${dy}-${dx}`);
+                    if (cell) {
+                        cell.className = `preview-cell ${color}`;
+                        cell.style.opacity = amplitude * amplitude;
+                    }
+                });
+            });
+
+            document.getElementById('nextLabel').textContent = 
+                formatQuantumState(nextPiece.amplitudes);
+        }
+
+        // Get current shape (considering collapse and rotation)
+        function getCurrentShape() {
+            let type = currentPiece.collapsed ? currentPiece.collapsedType : currentPiece.amplitudes[0].type;
+            let shape = [...TETROMINOES[type].shape.map(p => [...p])];
+
+            // Apply rotation
+            for (let r = 0; r < currentPiece.rotation % 4; r++) {
+                shape = shape.map(([y, x]) => [x, 2 - y]);
+            }
+
+            return { shape, type };
+        }
+
+        // Check if position is valid
+        function isValidPosition(newX, newY, newRotation = currentPiece.rotation) {
+            const savedRotation = currentPiece.rotation;
+            currentPiece.rotation = newRotation;
+            const { shape } = getCurrentShape();
+            currentPiece.rotation = savedRotation;
+
+            for (const [dy, dx] of shape) {
+                const x = newX + dx;
+                const y = newY + dy;
+
+                if (x < 0 || x >= BOARD_WIDTH || y >= BOARD_HEIGHT) return false;
+                if (y >= 0 && game.board[y][x]) return false;
+            }
+
+            return true;
+        }
+
+        // Collapse wavefunction (measurement)
+        function collapsePiece() {
+            if (currentPiece.collapsed) return;
+
+            // Sample from probability distribution
+            const rand = Math.random();
+            let cumulative = 0;
+
+            for (const { type, amplitude } of currentPiece.amplitudes) {
+                cumulative += amplitude * amplitude;
+                if (rand < cumulative) {
+                    currentPiece.collapsed = true;
+                    currentPiece.collapsedType = type;
+                    game.collapses++;
+                    
+                    logEvent('collapse', `Wavefunction collapsed: |ψ⟩ → |${type}⟩`);
+                    
+                    // Handle entanglement correlation
+                    if (entanglement.active && entanglement.correlations.length > 0) {
+                        const corr = entanglement.correlations[0];
+                        corr.collapsed = true;
+                        corr.type1 = type;
+                        // Find correlated type
+                        const corrIndex = TETRO_KEYS.indexOf(type);
+                        corr.type2 = TETRO_KEYS[(corrIndex + 3) % TETRO_KEYS.length];
+                    }
+
+                    updateQuantumStateDisplay();
+                    updateStats();
+                    return;
+                }
+            }
+
+            // Fallback
+            currentPiece.collapsed = true;
+            currentPiece.collapsedType = currentPiece.amplitudes[0].type;
+        }
+
+        // Lock piece to board
+        function lockPiece() {
+            // Collapse if not already
+            if (!currentPiece.collapsed) {
+                collapsePiece();
+            }
+
+            const { shape, type } = getCurrentShape();
+            const color = TETROMINOES[type].color;
+
+            for (const [dy, dx] of shape) {
+                const x = currentPiece.x + dx;
+                const y = currentPiece.y + dy;
+
+                if (y >= 0) {
+                    game.board[y][x] = { type, color };
+                }
+            }
+
+            // Check for line clears
+            checkLines();
+
+            // Spawn new piece
+            spawnPiece();
+        }
+
+        // Check and clear lines
+        function checkLines() {
+            const linesToClear = [];
+
+            for (let y = 0; y < BOARD_HEIGHT; y++) {
+                if (game.board[y].every(cell => cell !== null)) {
+                    if (game.mode === 'manyworlds') {
+                        // Quantum line: might not be complete
+                        const prob = 0.5 + Math.random() * 0.5;
+                        quantumLines[y] = { probability: prob };
+                        logEvent('quantum', `Line ${y} in superposition: ${(prob * 100).toFixed(0)}% complete`);
+                        
+                        // Mark cells as quantum
+                        for (let x = 0; x < BOARD_WIDTH; x++) {
+                            const cell = document.getElementById(`cell-${y}-${x}`);
+                            cell.classList.add('quantum-line');
+                        }
+                    } else {
+                        linesToClear.push(y);
+                    }
+                }
+            }
+
+            // Also collapse any quantum lines that exceed threshold
+            for (const [row, state] of Object.entries(quantumLines)) {
+                if (Math.random() < state.probability) {
+                    linesToClear.push(parseInt(row));
+                    delete quantumLines[row];
+                }
+            }
+
+            if (linesToClear.length > 0) {
+                // Sort and remove from top to bottom
+                linesToClear.sort((a, b) => a - b);
+                
+                for (const y of linesToClear.reverse()) {
+                    game.board.splice(y, 1);
+                    game.board.unshift(Array(BOARD_WIDTH).fill(null));
+                }
+
+                game.lines += linesToClear.length;
+                game.score += calculateScore(linesToClear.length);
+                game.level = Math.floor(game.lines / 10) + 1;
+                game.dropInterval = Math.max(100, 1000 - (game.level - 1) * 100);
+
+                logEvent('clear', `${linesToClear.length} line(s) cleared! Score: +${calculateScore(linesToClear.length)}`);
+                updateStats();
+            }
+        }
+
+        // Calculate score
+        function calculateScore(lines) {
+            const baseScore = [0, 100, 300, 500, 800][lines] || 800;
+            return baseScore * game.level;
+        }
+
+        // Draw the game
+        function draw() {
+            // Clear all cells
+            for (let y = 0; y < BOARD_HEIGHT; y++) {
+                for (let x = 0; x < BOARD_WIDTH; x++) {
+                    const cell = document.getElementById(`cell-${y}-${x}`);
+                    const boardCell = game.board[y][x];
+                    
+                    cell.className = 'cell';
+                    cell.style.opacity = '';  // Clear any opacity from previous frame
+                    
+                    if (boardCell) {
+                        cell.classList.add('filled', boardCell.color);
+                    }
+
+                    // Quantum line effect
+                    if (quantumLines[y]) {
+                        cell.classList.add('quantum-line');
+                    }
+                }
+            }
+
+            // Draw current piece
+            if (currentPiece.amplitudes.length > 0) {
+                if (currentPiece.collapsed) {
+                    // Draw collapsed piece
+                    const { shape, type } = getCurrentShape();
+                    const color = TETROMINOES[type].color;
+
+                    for (const [dy, dx] of shape) {
+                        const x = currentPiece.x + dx;
+                        const y = currentPiece.y + dy;
+
+                        if (y >= 0 && y < BOARD_HEIGHT && x >= 0 && x < BOARD_WIDTH) {
+                            const cell = document.getElementById(`cell-${y}-${x}`);
+                            cell.classList.add('filled', color);
+                        }
+                    }
+                } else {
+                    // Draw superposed piece (multiple shapes overlaid)
+                    const visibleAmps = currentPiece.amplitudes.slice(0, 3);
+                    
+                    for (const { type, amplitude } of visibleAmps) {
+                        let shape = [...TETROMINOES[type].shape.map(p => [...p])];
+                        
+                        // Apply rotation
+                        for (let r = 0; r < currentPiece.rotation % 4; r++) {
+                            shape = shape.map(([y, x]) => [x, 2 - y]);
+                        }
+
+                        const color = TETROMINOES[type].color;
+
+                        for (const [dy, dx] of shape) {
+                            const x = currentPiece.x + dx;
+                            const y = currentPiece.y + dy;
+
+                            if (y >= 0 && y < BOARD_HEIGHT && x >= 0 && x < BOARD_WIDTH) {
+                                const cell = document.getElementById(`cell-${y}-${x}`);
+                                cell.classList.add('filled', color, 'superposed');
+                                cell.style.opacity = 0.3 + amplitude * amplitude * 0.7;
+                            }
+                        }
+                    }
+                }
+
+                // Draw ghost piece (landing preview)
+                drawGhost();
+            }
+        }
+
+        // Draw ghost piece
+        function drawGhost() {
+            let ghostY = currentPiece.y;
+            
+            while (isValidPosition(currentPiece.x, ghostY + 1)) {
+                ghostY++;
+            }
+
+            if (ghostY === currentPiece.y) return;
+
+            const { shape, type } = getCurrentShape();
+            const color = TETROMINOES[type].color;
+
+            for (const [dy, dx] of shape) {
+                const x = currentPiece.x + dx;
+                const y = ghostY + dy;
+
+                if (y >= 0 && y < BOARD_HEIGHT && x >= 0 && x < BOARD_WIDTH) {
+                    const cell = document.getElementById(`cell-${y}-${x}`);
+                    if (!cell.classList.contains('filled')) {
+                        cell.classList.add('ghost', color);
+                        cell.style.opacity = '0.2';
+                    }
+                }
+            }
+        }
+
+        // ============================================
+        // QUANTUM GATE OPERATIONS
+        // ============================================
+
+        function applyGate(gateType) {
+            if (!game.running || game.paused || currentPiece.collapsed) return;
+
+            let amps = currentPiece.amplitudes;
+
+            switch (gateType) {
+                case 'H': // Hadamard-like: mix probabilities
+                    logEvent('quantum', 'Applied Hadamard gate - mixing superposition');
+                    amps = applyHadamard(amps);
+                    break;
+
+                case 'X': // Swap dominant states
+                    logEvent('quantum', 'Applied X gate - swapping states');
+                    amps = applyXGate(amps);
+                    break;
+
+                case 'Z': // Phase flip
+                    logEvent('quantum', 'Applied Z gate - phase flip');
+                    amps = applyZGate(amps);
+                    break;
+
+                case 'Ry': // Rotation
+                    logEvent('quantum', 'Applied Ry rotation - shifting probabilities');
+                    amps = applyRyGate(amps);
+                    break;
+
+                case 'Rz': // Phase rotation
+                    logEvent('quantum', 'Applied Rz rotation - phase shift');
+                    amps = applyRzGate(amps);
+                    break;
+
+                case 'CNOT': // Entangle with next piece
+                    if (!entanglement.active) {
+                        entanglement.active = true;
+                        entanglement.correlations = [{
+                            type1: null,
+                            type2: null,
+                            collapsed: false
+                        }];
+                        logEvent('entangle', 'CNOT applied - piece entangled with next!');
+                        updateEntanglementDisplay();
+                    }
+                    return;
+            }
+
+            currentPiece.amplitudes = amps;
+            updateQuantumStateDisplay();
+        }
+
+        function applyHadamard(amps) {
+            // Mix probabilities between states
+            const n = amps.length;
+            const mixed = amps.map((a, i) => {
+                const neighbors = [
+                    amps[(i - 1 + n) % n],
+                    amps[(i + 1) % n]
+                ];
+                
+                const newAmp = Math.sqrt(
+                    (a.amplitude * a.amplitude + 
+                     neighbors[0].amplitude * neighbors[0].amplitude * 0.3 +
+                     neighbors[1].amplitude * neighbors[1].amplitude * 0.3) / 1.6
+                );
+
+                return {
+                    ...a,
+                    amplitude: newAmp,
+                    phase: (a.phase + 45) % 360
+                };
+            });
+
+            // Renormalize
+            const norm = Math.sqrt(mixed.reduce((sum, a) => sum + a.amplitude * a.amplitude, 0));
+            return mixed.map(a => ({ ...a, amplitude: a.amplitude / norm }));
+        }
+
+        function applyXGate(amps) {
+            // Reverse order (swap probabilities)
+            return amps.reverse();
+        }
+
+        function applyZGate(amps) {
+            // Flip phases
+            return amps.map((a, i) => ({
+                ...a,
+                phase: (a.phase + (i % 2 === 0 ? 180 : 0)) % 360
+            }));
+        }
+
+        function applyRyGate(amps) {
+            // Rotate probabilities
+            const theta = Math.PI / 6; // 30 degree rotation
+            const cos = Math.cos(theta);
+            const sin = Math.sin(theta);
+
+            if (amps.length < 2) return amps;
+
+            const a0 = amps[0].amplitude;
+            const a1 = amps[1].amplitude;
+
+            amps[0].amplitude = Math.abs(cos * a0 - sin * a1);
+            amps[1].amplitude = Math.abs(sin * a0 + cos * a1);
+
+            // Renormalize
+            const norm = Math.sqrt(amps.reduce((sum, a) => sum + a.amplitude * a.amplitude, 0));
+            return amps.map(a => ({ ...a, amplitude: a.amplitude / norm }));
+        }
+
+        function applyRzGate(amps) {
+            // Rotate phases
+            const phi = 45; // degrees
+            return amps.map((a, i) => ({
+                ...a,
+                phase: (a.phase + phi * i) % 360
+            }));
+        }
+
+        // Early measurement
+        function measureEarly() {
+            if (!game.running || game.paused || currentPiece.collapsed) return;
+            
+            logEvent('quantum', 'Player forced early measurement!');
+            collapsePiece();
+        }
+
+        // Update entanglement display
+        function updateEntanglementDisplay() {
+            const el = document.getElementById('entangleDisplay');
+            
+            if (entanglement.active) {
+                el.className = 'entangle-display active';
+                el.innerHTML = `
+                    🔗 <strong>Entangled!</strong><br>
+                    Current ↔ Next piece correlated
+                `;
+            } else {
+                el.className = 'entangle-display';
+                el.textContent = 'No active entanglement';
+            }
+        }
+
+        // ============================================
+        // GAME MODE HANDLING
+        // ============================================
+
+        function setMode(mode) {
+            game.mode = mode;
+            
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === mode);
+            });
+
+            logEvent('quantum', `Mode switched to: ${mode.toUpperCase()}`);
+        }
+
+        // ============================================
+        // MOVEMENT & CONTROLS
+        // ============================================
+
+        function moveLeft() {
+            if (isValidPosition(currentPiece.x - 1, currentPiece.y)) {
+                currentPiece.x--;
+            }
+        }
+
+        function moveRight() {
+            if (isValidPosition(currentPiece.x + 1, currentPiece.y)) {
+                currentPiece.x++;
+            }
+        }
+
+        function moveDown() {
+            if (isValidPosition(currentPiece.x, currentPiece.y + 1)) {
+                currentPiece.y++;
+                return true;
+            }
+            return false;
+        }
+
+        function rotate() {
+            const newRotation = (currentPiece.rotation + 1) % 4;
+            
+            // Try rotation, with wall kicks
+            const kicks = [[0, 0], [-1, 0], [1, 0], [0, -1], [-1, -1], [1, -1]];
+            
+            for (const [dx, dy] of kicks) {
+                if (isValidPosition(currentPiece.x + dx, currentPiece.y + dy, newRotation)) {
+                    currentPiece.x += dx;
+                    currentPiece.y += dy;
+                    currentPiece.rotation = newRotation;
+                    return;
+                }
+            }
+        }
+
+        function hardDrop() {
+            while (moveDown()) {}
+            lockPiece();
+        }
+
+        // Keyboard handling
+        document.addEventListener('keydown', (e) => {
+            // Prevent arrow keys and space from scrolling
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+                e.preventDefault();
+            }
+
+            if (!game.running || game.paused) return;
+
+            switch (e.key) {
+                case 'ArrowLeft':
+                    moveLeft();
+                    break;
+                case 'ArrowRight':
+                    moveRight();
+                    break;
+                case 'ArrowDown':
+                    moveDown();
+                    break;
+                case 'ArrowUp':
+                    rotate();
+                    break;
+                case ' ':
+                    hardDrop();
+                    break;
+                case 'h':
+                case 'H':
+                    applyGate('H');
+                    break;
+                case 'x':
+                case 'X':
+                    applyGate('X');
+                    break;
+                case 'z':
+                case 'Z':
+                    applyGate('Z');
+                    break;
+                case 'r':
+                case 'R':
+                    applyGate('Ry');
+                    break;
+                case 'e':
+                case 'E':
+                    applyGate('CNOT');
+                    break;
+                case 'm':
+                case 'M':
+                    measureEarly();
+                    break;
+            }
+
+            draw();
+        });
+
+        // ============================================
+        // GAME LOOP
+        // ============================================
+
+        function gameLoop(timestamp) {
+            if (!game.running || game.paused) {
+                game.animationId = requestAnimationFrame(gameLoop);
+                return;
+            }
+
+            if (timestamp - game.lastDrop > game.dropInterval) {
+                if (!moveDown()) {
+                    lockPiece();
+                }
+                game.lastDrop = timestamp;
+            }
+
+            draw();
+            game.animationId = requestAnimationFrame(gameLoop);
+        }
+
+        // ============================================
+        // GAME CONTROL
+        // ============================================
+
+        function startGame() {
+            if (game.running) return;
+
+            game.running = true;
+            game.paused = false;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('pauseBtn').disabled = false;
+
+            spawnPiece();
+            game.lastDrop = performance.now();
+            game.animationId = requestAnimationFrame(gameLoop);
+
+            logEvent('quantum', 'Game started! Quantum field initialized.');
+        }
+
+        function togglePause() {
+            if (!game.running) return;
+
+            game.paused = !game.paused;
+            document.getElementById('pauseBtn').textContent = game.paused ? '▶️ Resume' : '⏸️ Pause';
+
+            logEvent('quantum', game.paused ? 'Game paused - wavefunction frozen' : 'Game resumed');
+        }
+
+        function resetGame() {
+            if (game.animationId) {
+                cancelAnimationFrame(game.animationId);
+            }
+
+            game = {
+                board: [],
+                running: false,
+                paused: false,
+                score: 0,
+                lines: 0,
+                level: 1,
+                collapses: 0,
+                mode: game.mode,
+                dropInterval: 1000,
+                lastDrop: 0,
+                animationId: null
+            };
+
+            currentPiece = {
+                amplitudes: [],
+                x: 0,
+                y: 0,
+                rotation: 0,
+                collapsed: false,
+                collapsedType: null
+            };
+
+            nextPiece = { amplitudes: [] };
+            entanglement = { active: false, correlations: [] };
+            quantumLines = {};
+
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+            document.getElementById('pauseBtn').textContent = '⏸️ Pause';
+            document.getElementById('gameOverlay').classList.remove('active');
+
+            initBoard();
+            updateStats();
+            updateQuantumStateDisplay();
+            updateNextPreview();
+            updateEntanglementDisplay();
+
+            document.getElementById('eventLog').innerHTML = '';
+            logEvent('quantum', 'Quantum field reset. Ready for new game.');
+        }
+
+        function gameOver() {
+            game.running = false;
+
+            document.getElementById('finalScore').textContent = game.score;
+            document.getElementById('finalLines').textContent = game.lines;
+            document.getElementById('finalCollapses').textContent = game.collapses;
+            document.getElementById('gameOverlay').classList.add('active');
+
+            logEvent('collapse', 'TOTAL DECOHERENCE - Game Over!');
+        }
+
+        // ============================================
+        // UI UPDATES
+        // ============================================
+
+        function updateStats() {
+            document.getElementById('statScore').textContent = game.score;
+            document.getElementById('statLines').textContent = game.lines;
+            document.getElementById('statLevel').textContent = game.level;
+            document.getElementById('statCollapses').textContent = game.collapses;
+        }
+
+        function logEvent(type, message) {
+            const log = document.getElementById('eventLog');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<span class="log-${type}">${message}</span>`;
+            log.insertBefore(entry, log.firstChild);
+
+            while (log.children.length > 30) {
+                log.removeChild(log.lastChild);
+            }
+        }
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+
+        window.onload = () => {
+            initBoard();
+            updateStats();
+            logEvent('quantum', 'Quantum Tetris initialized. Press Start to begin!');
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,1699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Zonk (Quonk) 🐐⚛️</title>
+    <style>
+        :root {
+            --bg-dark: #2a1f14;
+            --bg-card: #3d2e1f;
+            --bg-stage: #c9a66b;
+            --accent: #d4a956;
+            --accent2: #e67e22;
+            --accent3: #8b5a2b;
+            --text: #f5e6d3;
+            --gold: #ffd700;
+            --zonk: #cc3333;
+            --cream: #f5e6d3;
+            --curtain: #a67c52;
+            --curtain-dark: #5c4033;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(180deg, #c9a66b 0%, #a67c52 30%, #5c4033 100%);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 10px 20px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 2px;
+            background: linear-gradient(90deg, var(--gold), #fff8dc, var(--gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            color: var(--cream);
+            font-size: 0.85rem;
+            font-style: italic;
+            opacity: 0.8;
+        }
+        }
+
+        .game-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 260px 1fr 280px;
+            gap: 15px;
+        }
+
+        @media (max-width: 1100px) {
+            .game-container {
+                grid-template-columns: 1fr 280px;
+            }
+            .left-panel {
+                display: none;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .game-container {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                order: -1;
+            }
+        }
+
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sidebar .log-card {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 200px;
+        }
+
+        .sidebar .log-card .log {
+            flex: 1;
+            max-height: none;
+        }
+
+        .main-area {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .doors-actions-row {
+            display: grid;
+            grid-template-columns: 70% 30%;
+            gap: 15px;
+        }
+
+        @media (max-width: 700px) {
+            .doors-actions-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .doors-actions-row .controls {
+            flex-direction: column;
+        }
+
+        .card {
+            background: rgba(61, 46, 31, 0.95);
+            border-radius: 10px;
+            padding: 15px;
+            border: 2px solid var(--curtain);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .card h2 {
+            color: var(--gold);
+            margin-bottom: 12px;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Collapsible panels */
+        .collapsible {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .collapsible::after {
+            content: '▼';
+            font-size: 0.7rem;
+            margin-left: auto;
+            transition: transform 0.3s;
+        }
+
+        .collapsible.collapsed::after {
+            transform: rotate(-90deg);
+        }
+
+        .collapse-content {
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            max-height: 500px;
+            opacity: 1;
+        }
+
+        .collapse-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+        }
+
+        /* Doors */
+        .doors-container {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            padding: 20px;
+            flex-wrap: wrap;
+            background: linear-gradient(180deg, rgba(201,166,107,0.3) 0%, rgba(92,64,51,0.3) 100%);
+            border-radius: 10px;
+        }
+
+        .door {
+            width: 130px;
+            height: 180px;
+            background: linear-gradient(180deg, 
+                #d4a56a 0%, 
+                #c9a66b 15%,
+                #a67c52 30%,
+                #8b6914 50%,
+                #a67c52 70%,
+                #c9a66b 85%,
+                #d4a56a 100%);
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+            border: 4px solid #5c4033;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset -20px 0 30px rgba(0,0,0,0.2), inset 20px 0 30px rgba(0,0,0,0.2);
+        }
+
+        .door:hover:not(.opened):not(.disabled) {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4), inset -20px 0 30px rgba(0,0,0,0.2), inset 20px 0 30px rgba(0,0,0,0.2);
+            border-color: var(--gold);
+        }
+
+        .door.selected {
+            border-color: var(--gold);
+            box-shadow: 0 0 25px rgba(255, 215, 0, 0.6), inset -20px 0 30px rgba(0,0,0,0.2), inset 20px 0 30px rgba(0,0,0,0.2);
+        }
+
+        .door.opened {
+            background: linear-gradient(180deg, #4a3728 0%, #2d1f14 100%);
+            border-color: #3d2e1f;
+        }
+
+        .door.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .door-number {
+            font-size: 2.8rem;
+            font-weight: bold;
+            color: #1a1a1a;
+            text-shadow: 2px 2px 0 rgba(255,255,255,0.3);
+            background: radial-gradient(circle, #fff8dc 30%, #d4a956 100%);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid #5c4033;
+        }
+
+        .door-knob {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            width: 15px;
+            height: 15px;
+            background: var(--gold);
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .door-content {
+            font-size: 4rem;
+            display: none;
+        }
+
+        .door.opened .door-content {
+            display: block;
+        }
+
+        .door.opened .door-number,
+        .door.opened .door-knob {
+            display: none;
+        }
+
+        .door-label {
+            position: absolute;
+            bottom: -30px;
+            font-size: 0.8rem;
+            color: var(--cream);
+            text-align: center;
+            width: 100%;
+        }
+
+        .door-label.entangled {
+            color: #ff9966;
+        }
+
+        .door-label.superposition {
+            color: #88cc66;
+        }
+
+        .door-label.ground-state {
+            color: #66aaff;
+        }
+
+        .door-label.dirac-sea {
+            color: #ff6644;
+            animation: diracFlicker 1.5s ease-in-out infinite;
+        }
+
+        @keyframes diracFlicker {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; text-shadow: 0 0 10px #ff6644; }
+        }
+
+        .door.dirac-sea {
+            border-color: #ff6644;
+            box-shadow: 0 0 20px rgba(255, 102, 68, 0.3), inset 0 0 30px rgba(255, 102, 68, 0.1);
+        }
+
+        .door.ground-state {
+            border-color: #66aaff;
+            opacity: 0.8;
+        }
+
+        .door.entangled {
+            border-color: #ff9966;
+        }
+
+        .state-type-badge {
+            font-size: 0.6rem;
+            padding: 2px 5px;
+            border-radius: 4px;
+            margin-top: 3px;
+            display: inline-block;
+        }
+
+        .badge-entangled { background: #ff9966; color: #000; }
+        .badge-superposition { background: #88cc66; color: #000; }
+        .badge-ground { background: #66aaff; color: #000; }
+        .badge-dirac { background: #ff6644; color: #fff; }
+
+        /* Quantum State Display */
+        .quantum-state {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .state-box {
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid var(--curtain);
+        }
+
+        .state-box h3 {
+            font-size: 0.85rem;
+            color: var(--cream);
+            margin-bottom: 8px;
+        }
+
+        .amplitude {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--gold);
+        }
+
+        .probability {
+            font-size: 1.1rem;
+            color: #88cc66;
+            margin-top: 4px;
+        }
+
+        .phase {
+            font-size: 0.85rem;
+            color: #ff9966;
+            margin-top: 4px;
+        }
+
+        .prob-bar {
+            height: 8px;
+            background: #333;
+            border-radius: 4px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .prob-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent3));
+            transition: width 0.5s ease;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: bold;
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--gold), #daa520);
+            color: #1a1a1a;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #e67e22, #cc6600);
+            color: #fff;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(230, 126, 34, 0.4);
+        }
+
+        .btn-quantum {
+            background: linear-gradient(135deg, #6b8e23, #556b2f);
+            color: #fff;
+        }
+
+        .btn-quantum:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(107, 142, 35, 0.4);
+        }
+
+        .btn-reset {
+            background: #5c4033;
+            color: var(--cream);
+            border: 1px solid var(--curtain);
+        }
+
+        .btn-reset:hover:not(:disabled) {
+            background: #6d4c41;
+        }
+
+        /* Parameters */
+        .param-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .param {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .param label {
+            font-size: 0.8rem;
+            color: var(--cream);
+            opacity: 0.8;
+        }
+
+        .param input[type="range"] {
+            width: 100%;
+            accent-color: var(--gold);
+        }
+
+        .param-value {
+            font-size: 0.85rem;
+            color: var(--gold);
+            text-align: right;
+        }
+
+        .param select {
+            padding: 8px;
+            border-radius: 5px;
+            background: #2d1f14;
+            color: var(--cream);
+            border: 1px solid var(--curtain);
+        }
+
+        /* Event Log */
+        .log {
+            height: 200px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.8rem;
+        }
+
+        .log-entry {
+            margin-bottom: 6px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(166, 124, 82, 0.3);
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-time {
+            color: var(--curtain);
+            font-size: 0.7rem;
+        }
+
+        .log-quantum {
+            color: var(--gold);
+        }
+
+        .log-action {
+            color: #ff9966;
+        }
+
+        .log-result {
+            color: var(--accent3);
+        }
+
+        .log-warn {
+            color: var(--gold);
+        }
+
+        .log-entangle {
+            color: #ff00aa;
+            font-weight: bold;
+        }
+
+        .log-ground {
+            color: #4488ff;
+        }
+
+        .log-dirac {
+            color: #ff6644;
+            font-style: italic;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .stat {
+            background: rgba(0, 0, 0, 0.25);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid var(--curtain);
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--gold);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--cream);
+            opacity: 0.7;
+        }
+
+        /* Result Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: linear-gradient(180deg, #4a3728 0%, #2d1f14 100%);
+            padding: 35px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 400px;
+            animation: modalPop 0.3s ease;
+            border: 3px solid var(--gold);
+        }
+
+        @keyframes modalPop {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .modal-icon {
+            font-size: 4.5rem;
+            margin-bottom: 15px;
+        }
+
+        .modal-title {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .modal-title.win {
+            color: var(--gold);
+        }
+
+        .modal-title.lose {
+            color: var(--zonk);
+        }
+
+        .modal-message {
+            color: var(--cream);
+            opacity: 0.8;
+            margin-bottom: 20px;
+        }
+
+        /* Equation display */
+        .equation {
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+            font-size: 1rem;
+            color: var(--gold);
+            background: rgba(0, 0, 0, 0.25);
+            padding: 10px;
+            border-radius: 8px;
+            margin: 8px 0;
+        }
+
+        /* Quantum Switch Explanation */
+        .quantum-switch-info {
+            font-size: 0.8rem;
+            color: var(--cream);
+            line-height: 1.4;
+            opacity: 0.9;
+        }
+
+        .formula-label {
+            margin-bottom: 8px;
+        }
+
+        .formula-box {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--gold);
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            text-align: center;
+        }
+
+        .matrix-equation {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: 'Times New Roman', serif;
+            font-size: 1rem;
+            color: var(--gold);
+        }
+
+        .matrix {
+            display: inline-flex;
+            flex-direction: column;
+            border-left: 2px solid var(--gold);
+            border-right: 2px solid var(--gold);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .matrix-row {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .matrix-row span {
+            min-width: 45px;
+            text-align: center;
+        }
+
+        .formula-result {
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+            font-size: 0.9rem;
+            color: #88cc66;
+            text-align: center;
+            margin: 8px 0;
+            padding: 6px;
+            background: rgba(136, 204, 102, 0.1);
+            border-radius: 6px;
+        }
+
+        .strategy-tips {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            padding: 8px;
+            margin: 8px 0;
+        }
+
+        .strategy-tips p {
+            margin: 4px 0;
+            font-size: 0.75rem;
+        }
+
+        .strategy-tips strong {
+            color: #ff9966;
+        }
+
+        .hint {
+            font-size: 0.75rem;
+            color: var(--gold);
+            margin-top: 8px;
+        }
+
+        /* Bloch sphere visualization (simplified) */
+        .bloch-container {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .bloch-sphere {
+            width: 150px;
+            height: 150px;
+            border: 2px solid var(--accent);
+            border-radius: 50%;
+            position: relative;
+            background: radial-gradient(circle at 30% 30%, rgba(0, 212, 255, 0.1), transparent);
+        }
+
+        .bloch-vector {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 60px;
+            background: var(--accent2);
+            transform-origin: bottom center;
+            border-radius: 2px;
+            transition: transform 0.5s ease;
+        }
+
+        .bloch-dot {
+            position: absolute;
+            top: -8px;
+            left: -4px;
+            width: 12px;
+            height: 12px;
+            background: var(--accent2);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent2);
+        }
+
+        /* Info tooltip */
+        .info-icon {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            background: #444;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 18px;
+            font-size: 0.75rem;
+            cursor: help;
+            position: relative;
+        }
+
+        .info-icon:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            padding: 10px;
+            border-radius: 8px;
+            width: 200px;
+            font-size: 0.8rem;
+            color: #ccc;
+            z-index: 100;
+        }
+
+        /* Game status */
+        .game-status {
+            text-align: center;
+            font-size: 1.1rem;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 8px;
+            margin-bottom: 0;
+            border: 1px solid var(--curtain);
+        }
+
+        .status-step {
+            color: var(--gold);
+            font-weight: bold;
+        }
+
+        /* Entanglement visualization */
+        .entangle-line {
+            position: absolute;
+            height: 3px;
+            background: linear-gradient(90deg, #ff9966, transparent, #ff9966);
+            animation: entanglePulse 2s ease-in-out infinite;
+        }
+
+        @keyframes entanglePulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⚛️ Quantum Zonk (Quonk) 🐐</h1>
+        <p class="subtitle">The Quantum Monty Hall Problem — Where Goats Exist in Superposition</p>
+    </div>
+
+    <div class="game-container">
+        <!-- Left Panel: Explanations & Theory -->
+        <div class="left-panel">
+            <!-- Quantum Switch Explanation -->
+            <div class="card">
+                <h2 class="collapsible" onclick="toggleCollapse(this)">⚛️ Quantum Switch</h2>
+                <div class="collapse-content quantum-switch-info">
+                    <p class="formula-label">Applies a unitary rotation U(θ) between your door and the other remaining door:</p>
+                    <div class="formula-box">
+                        <div class="matrix-equation">
+                            U(θ) = 
+                            <span class="matrix">
+                                <span class="matrix-row"><span>cos θ</span><span>−sin θ</span></span>
+                                <span class="matrix-row"><span>sin θ</span><span>cos θ</span></span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="formula-result">
+                        |ψ'⟩ = cos(θ)|selected⟩ + sin(θ)|other⟩
+                    </div>
+                    <div class="strategy-tips">
+                        <p><strong>θ = 0°:</strong> Same as Stay (100% your door)</p>
+                        <p><strong>θ = 45°:</strong> Equal superposition (50/50 chance)</p>
+                        <p><strong>θ = 90°:</strong> Same as Switch (100% other door)</p>
+                    </div>
+                    <p class="hint">💡 Adjust θ in Parameters to control your quantum strategy!</p>
+                </div>
+            </div>
+
+            <!-- Quantum States Theory -->
+            <div class="card">
+                <h2 class="collapsible" onclick="toggleCollapse(this)">📚 Quantum States</h2>
+                <div class="collapse-content" style="font-size: 0.8rem; color: #ccc; line-height: 1.5;">
+                    <p><strong style="color: var(--accent2);">🔗 Entangled:</strong><br>
+                    |ψ⟩ = (|prize,zonk⟩ + |zonk,prize⟩)/√2<br>
+                    <em>Correlated Bell state pair</em></p>
+                    <br>
+                    <p><strong style="color: var(--accent3);">⚛️ Superposition:</strong><br>
+                    |φ⟩ = α|prize⟩ + β|zonk⟩<br>
+                    <em>Standard quantum mixture</em></p>
+                    <br>
+                    <p><strong style="color: #4488ff;">❄️ Ground State:</strong><br>
+                    |0⟩ = minimal energy eigenstate<br>
+                    <em>Low probability, needs excitation</em></p>
+                    <br>
+                    <p><strong style="color: #ff6644;">🌊 Dirac Sea:</strong><br>
+                    |−E⟩ = e^(iπ)|ψ⟩ (phase = 180°)<br>
+                    <em>Negative energy vacuum fluctuation</em></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-area">
+            <!-- Game Status -->
+            <div class="card">
+                <div class="game-status" id="gameStatus">
+                    <span class="status-step">Step 1:</span> Choose a door to make your initial pick
+                </div>
+            </div>
+
+            <!-- Doors + Player Actions Row -->
+            <div class="doors-actions-row">
+                <!-- Doors -->
+                <div class="card">
+                    <h2>🚪 The Quantum Doors</h2>
+                    <div class="doors-container" id="doorsContainer">
+                        <div class="door" id="door1" onclick="selectDoor(1)">
+                            <div class="door-number">1</div>
+                            <div class="door-knob"></div>
+                            <div class="door-content" id="door1Content"></div>
+                            <div class="door-label" id="doorLabel1">⟨1|ψ⟩</div>
+                        </div>
+                        <div class="door" id="door2" onclick="selectDoor(2)">
+                            <div class="door-number">2</div>
+                            <div class="door-knob"></div>
+                            <div class="door-content" id="door2Content"></div>
+                            <div class="door-label" id="doorLabel2">|φ⟩</div>
+                        </div>
+                        <div class="door" id="door3" onclick="selectDoor(3)">
+                            <div class="door-number">3</div>
+                            <div class="door-knob"></div>
+                            <div class="door-content" id="door3Content"></div>
+                            <div class="door-label" id="doorLabel3">⟨3|ψ⟩</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Player Actions -->
+                <div class="card">
+                    <h2>🎮 Actions</h2>
+                    <div class="controls">
+                        <button class="btn-primary" id="btnStay" onclick="playerChoice('stay')" disabled>
+                            🛑 Stay
+                        </button>
+                        <button class="btn-secondary" id="btnSwitch" onclick="playerChoice('switch')" disabled>
+                            🔀 Switch
+                        </button>
+                        <button class="btn-quantum" id="btnQuantumSwitch" onclick="playerChoice('quantum')" disabled>
+                            ⚛️ Quantum
+                        </button>
+                        <button class="btn-reset" onclick="resetGame()">
+                            🔄 New Game
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <h2>📊 Quantum State |ψ⟩</h2>
+                <div class="equation" id="stateEquation">
+                    |ψ⟩ = α₁|1⟩ + α₂|2⟩ + α₃|3⟩
+                </div>
+                <div class="quantum-state">
+                    <div class="state-box">
+                        <h3>Door 1 <span id="stateType1" class="state-type-badge badge-entangled">Entangled</span></h3>
+                        <div class="amplitude" id="amp1">0.612</div>
+                        <div class="probability" id="prob1">P = 37.5%</div>
+                        <div class="phase" id="phase1">φ = 0°</div>
+                        <div class="prob-bar"><div class="prob-fill" id="bar1" style="width: 37.5%"></div></div>
+                    </div>
+                    <div class="state-box">
+                        <h3>Door 2 <span id="stateType2" class="state-type-badge badge-superposition">Superpos.</span></h3>
+                        <div class="amplitude" id="amp2">0.500</div>
+                        <div class="probability" id="prob2">P = 25.0%</div>
+                        <div class="phase" id="phase2">φ = 0°</div>
+                        <div class="prob-bar"><div class="prob-fill" id="bar2" style="width: 25%"></div></div>
+                    </div>
+                    <div class="state-box">
+                        <h3>Door 3 <span id="stateType3" class="state-type-badge badge-entangled">Entangled</span></h3>
+                        <div class="amplitude" id="amp3">0.612</div>
+                        <div class="probability" id="prob3">P = 37.5%</div>
+                        <div class="phase" id="phase3">φ = 0°</div>
+                        <div class="prob-bar"><div class="prob-fill" id="bar3" style="width: 37.5%"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Parameters -->
+            <div class="card">
+                <h2>⚙️ Quantum Parameters</h2>
+                <div class="param-grid">
+                    <div class="param">
+                        <label>Monty Mode 
+                            <span class="info-icon" data-tooltip="Coherent: weak measurement. Decoherence: full collapse. Trickster: adds phase shift.">?</span>
+                        </label>
+                        <select id="montyMode" onchange="updateParams()">
+                            <option value="coherent">🔹 Coherent</option>
+                            <option value="decoherence">🔸 Decoherence</option>
+                            <option value="trickster">🃏 Trickster</option>
+                        </select>
+                    </div>
+                    <div class="param">
+                        <label>α (Damping Factor)</label>
+                        <input type="range" id="alpha" min="0.5" max="1" step="0.05" value="0.75" onchange="updateParams()">
+                        <div class="param-value" id="alphaVal">0.75</div>
+                    </div>
+                    <div class="param">
+                        <label>δ (Trickster Phase)</label>
+                        <input type="range" id="delta" min="0" max="180" step="15" value="45" onchange="updateParams()">
+                        <div class="param-value" id="deltaVal">45°</div>
+                    </div>
+                    <div class="param">
+                        <label>θ (Quantum Rotation)</label>
+                        <input type="range" id="theta" min="0" max="90" step="5" value="45" onchange="updateParams()">
+                        <div class="param-value" id="thetaVal">45°</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="card">
+                <h2>📈 Statistics</h2>
+                <div class="stats-grid">
+                    <div class="stat">
+                        <div class="stat-value" id="statGames">0</div>
+                        <div class="stat-label">Games Played</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="statWins">0</div>
+                        <div class="stat-label">Wins</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="statWinRate">0%</div>
+                        <div class="stat-label">Win Rate</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="statQuantumWins">0</div>
+                        <div class="stat-label">Quantum Wins</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Log -->
+            <div class="card log-card">
+                <h2>📜 Quantum Event Log</h2>
+                <div class="log" id="eventLog">
+                    <div class="log-entry">
+                        <span class="log-time">[00:00]</span>
+                        <span class="log-quantum">System initialized in quantum superposition</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Result Modal -->
+    <div class="modal" id="resultModal">
+        <div class="modal-content">
+            <div class="modal-icon" id="modalIcon">🎉</div>
+            <div class="modal-title" id="modalTitle">You Win!</div>
+            <div class="modal-message" id="modalMessage">The quantum state collapsed in your favor!</div>
+            <button class="btn-primary" onclick="closeModal()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // QUANTUM ZONK (QUONK) GAME ENGINE
+        // ============================================
+
+        // Collapsible panel toggle
+        function toggleCollapse(header) {
+            header.classList.toggle('collapsed');
+            const content = header.nextElementSibling;
+            content.classList.toggle('collapsed');
+        }
+
+        // Game State
+        let gameState = {
+            phase: 'select', // select, monty, choose, reveal
+            amplitudes: [0, 0, 0], // Complex amplitudes (stored as [real, imag] pairs simplified to magnitude)
+            phases: [0, 0, 0], // Phase angles in degrees
+            doorStates: ['superposition', 'superposition', 'superposition'], // quantum state type per door
+            entangledPair: null, // [doorA, doorB] if entangled
+            selectedDoor: null,
+            openedDoor: null,
+            prizeDoor: null, // Only set in decoherence mode
+            stats: {
+                games: 0,
+                wins: 0,
+                quantumWins: 0
+            }
+        };
+
+        // Quantum state types and their properties
+        const QUANTUM_STATES = {
+            entangled: {
+                name: 'Entangled',
+                symbol: '🔗',
+                badge: 'badge-entangled',
+                labelClass: 'entangled',
+                description: 'Bell state correlation',
+                // Entangled doors share probability, anti-correlated
+                getAmplitude: (base) => base * 0.9,
+                getPhase: () => 0
+            },
+            superposition: {
+                name: 'Superpos.',
+                symbol: '⚛️',
+                badge: 'badge-superposition',
+                labelClass: 'superposition',
+                description: 'Standard mixture',
+                getAmplitude: (base) => base,
+                getPhase: () => Math.random() * 60 - 30  // slight phase variation
+            },
+            ground: {
+                name: 'Ground |0⟩',
+                symbol: '❄️',
+                badge: 'badge-ground',
+                labelClass: 'ground-state',
+                description: 'Minimal energy eigenstate',
+                // Ground state has very low amplitude
+                getAmplitude: (base) => base * 0.2,
+                getPhase: () => 0
+            },
+            dirac: {
+                name: 'Dirac Sea',
+                symbol: '🌊',
+                badge: 'badge-dirac',
+                labelClass: 'dirac-sea',
+                description: 'Negative energy vacuum',
+                // Dirac sea has 180° phase (negative amplitude in QM sense)
+                getAmplitude: (base) => base * 0.7,
+                getPhase: () => 180  // e^(iπ) = -1, represents negative energy
+            }
+        };
+
+        // Parameters
+        let params = {
+            alpha: 0.75,
+            delta: 45,
+            theta: 45,
+            montyMode: 'coherent'
+        };
+
+        // Generate random quantum configuration for doors
+        function generateQuantumConfig() {
+            const stateTypes = ['entangled', 'superposition', 'ground', 'dirac'];
+            const config = {
+                doorStates: [],
+                entangledPair: null
+            };
+
+            // Randomly decide if we have entanglement (60% chance)
+            const hasEntanglement = Math.random() < 0.6;
+            
+            if (hasEntanglement) {
+                // Pick two doors to entangle
+                const doors = [0, 1, 2];
+                const shuffled = doors.sort(() => Math.random() - 0.5);
+                config.entangledPair = [shuffled[0], shuffled[1]];
+                
+                // Set entangled doors
+                config.doorStates[shuffled[0]] = 'entangled';
+                config.doorStates[shuffled[1]] = 'entangled';
+                
+                // Third door gets random state (not entangled)
+                const otherStates = ['superposition', 'ground', 'dirac'];
+                config.doorStates[shuffled[2]] = otherStates[Math.floor(Math.random() * otherStates.length)];
+            } else {
+                // No entanglement - each door gets random state
+                for (let i = 0; i < 3; i++) {
+                    const availableStates = ['superposition', 'ground', 'dirac'];
+                    config.doorStates[i] = availableStates[Math.floor(Math.random() * availableStates.length)];
+                }
+            }
+
+            return config;
+        }
+
+        // Initialize game
+        function initGame() {
+            const alpha = params.alpha;
+            
+            // Generate random quantum configuration
+            const config = generateQuantumConfig();
+            gameState.doorStates = config.doorStates;
+            gameState.entangledPair = config.entangledPair;
+
+            // Calculate base probabilities
+            let baseProbs = [0.33, 0.33, 0.34];
+            
+            // If entangled, entangled pair shares more probability
+            if (config.entangledPair) {
+                const [d1, d2] = config.entangledPair;
+                const third = [0, 1, 2].find(d => d !== d1 && d !== d2);
+                baseProbs[d1] = 0.4 * alpha;
+                baseProbs[d2] = 0.4 * alpha;
+                baseProbs[third] = 1 - (baseProbs[d1] + baseProbs[d2]);
+            }
+
+            // Apply quantum state modifiers to amplitudes
+            const amplitudes = [];
+            const phases = [];
+            
+            for (let i = 0; i < 3; i++) {
+                const stateType = config.doorStates[i];
+                const state = QUANTUM_STATES[stateType];
+                const baseAmp = Math.sqrt(baseProbs[i]);
+                
+                amplitudes[i] = state.getAmplitude(baseAmp);
+                phases[i] = state.getPhase();
+            }
+
+            // Normalize amplitudes
+            const norm = Math.sqrt(amplitudes.reduce((sum, a) => sum + a * a, 0));
+            gameState.amplitudes = amplitudes.map(a => a / norm);
+            gameState.phases = phases;
+            
+            gameState.phase = 'select';
+            gameState.selectedDoor = null;
+            gameState.openedDoor = null;
+            gameState.prizeDoor = null;
+
+            updateDoorLabels();
+            updateDisplay();
+            updateDoors();
+            
+            // Log the quantum configuration
+            logEvent('quantum', '═══ New Quantum Configuration ═══');
+            for (let i = 0; i < 3; i++) {
+                const state = QUANTUM_STATES[config.doorStates[i]];
+                logEvent('quantum', `Door ${i+1}: ${state.symbol} ${state.name} - ${state.description}`);
+            }
+            if (config.entangledPair) {
+                const [d1, d2] = config.entangledPair;
+                logEvent('entangle', `🔗 Entanglement: Door ${d1+1} ↔ Door ${d2+1} (Bell state)`);
+            }
+            logEvent('quantum', '|ψ⟩ = ' + formatState());
+        }
+
+        // Update door labels based on quantum states
+        function updateDoorLabels() {
+            for (let i = 0; i < 3; i++) {
+                const stateType = gameState.doorStates[i];
+                const state = QUANTUM_STATES[stateType];
+                
+                // Update door label
+                const labelEl = document.getElementById(`doorLabel${i+1}`);
+                labelEl.textContent = `${state.symbol} ${state.name}`;
+                labelEl.className = `door-label ${state.labelClass}`;
+                
+                // Update state type badge
+                const badgeEl = document.getElementById(`stateType${i+1}`);
+                badgeEl.textContent = state.name;
+                badgeEl.className = `state-type-badge ${state.badge}`;
+                
+                // Update door styling
+                const doorEl = document.getElementById(`door${i+1}`);
+                doorEl.classList.remove('entangled', 'ground-state', 'dirac-sea');
+                if (stateType === 'dirac') doorEl.classList.add('dirac-sea');
+                if (stateType === 'ground') doorEl.classList.add('ground-state');
+                if (stateType === 'entangled') doorEl.classList.add('entangled');
+            }
+        }
+
+        // Format quantum state as string
+        function formatState() {
+            const a = gameState.amplitudes;
+            const p = gameState.phases;
+            let state = '';
+            for (let i = 0; i < 3; i++) {
+                if (a[i] > 0.001) {
+                    if (state.length > 0) state += ' + ';
+                    const phaseStr = p[i] !== 0 ? `e^(i${p[i].toFixed(0)}°)` : '';
+                    state += `${a[i].toFixed(3)}${phaseStr}|${i+1}⟩`;
+                }
+            }
+            return state || '|∅⟩';
+        }
+
+        // Update parameter display
+        function updateParams() {
+            params.alpha = parseFloat(document.getElementById('alpha').value);
+            params.delta = parseFloat(document.getElementById('delta').value);
+            params.theta = parseFloat(document.getElementById('theta').value);
+            params.montyMode = document.getElementById('montyMode').value;
+
+            document.getElementById('alphaVal').textContent = params.alpha.toFixed(2);
+            document.getElementById('deltaVal').textContent = params.delta + '°';
+            document.getElementById('thetaVal').textContent = params.theta + '°';
+
+            if (gameState.phase === 'select') {
+                initGame();
+            }
+        }
+
+        // Update quantum state display
+        function updateDisplay() {
+            const a = gameState.amplitudes;
+            const p = gameState.phases;
+
+            for (let i = 0; i < 3; i++) {
+                const prob = a[i] * a[i];
+                document.getElementById(`amp${i+1}`).textContent = a[i].toFixed(3);
+                document.getElementById(`prob${i+1}`).textContent = `P = ${(prob * 100).toFixed(1)}%`;
+                document.getElementById(`phase${i+1}`).textContent = `φ = ${p[i].toFixed(0)}°`;
+                document.getElementById(`bar${i+1}`).style.width = `${prob * 100}%`;
+            }
+
+            // Update equation
+            document.getElementById('stateEquation').textContent = '|ψ⟩ = ' + formatState();
+        }
+
+        // Update door visual states
+        function updateDoors() {
+            for (let i = 1; i <= 3; i++) {
+                const door = document.getElementById(`door${i}`);
+                door.classList.remove('selected', 'opened', 'disabled');
+
+                if (i === gameState.selectedDoor) {
+                    door.classList.add('selected');
+                }
+                if (i === gameState.openedDoor) {
+                    door.classList.add('opened');
+                    document.getElementById(`door${i}Content`).textContent = '🐐';
+                }
+                if (gameState.phase === 'reveal' && i !== gameState.openedDoor) {
+                    door.classList.add('opened');
+                }
+            }
+
+            // Update buttons
+            const canChoose = gameState.phase === 'choose';
+            document.getElementById('btnStay').disabled = !canChoose;
+            document.getElementById('btnSwitch').disabled = !canChoose;
+            document.getElementById('btnQuantumSwitch').disabled = !canChoose;
+        }
+
+        // Update game status text
+        function updateStatus(text) {
+            document.getElementById('gameStatus').innerHTML = text;
+        }
+
+        // Select a door (initial pick)
+        function selectDoor(doorNum) {
+            if (gameState.phase !== 'select') return;
+
+            gameState.selectedDoor = doorNum;
+            gameState.phase = 'monty';
+            
+            logEvent('action', `Player selected Door ${doorNum}`);
+            updateStatus(`<span class="status-step">Step 2:</span> Monty is opening a door...`);
+            updateDoors();
+
+            // Monty opens a door after a delay
+            setTimeout(() => montyOpens(), 1000);
+        }
+
+        // Monty opens a losing door
+        function montyOpens() {
+            const mode = params.montyMode;
+            const selected = gameState.selectedDoor;
+            let a = [...gameState.amplitudes];
+            let p = [...gameState.phases];
+
+            logEvent('action', `Monty operates in ${mode} mode`);
+
+            if (mode === 'decoherence') {
+                // Full collapse: sample prize location from current distribution
+                const probs = a.map(x => x * x);
+                const r = Math.random();
+                let cumulative = 0;
+                for (let i = 0; i < 3; i++) {
+                    cumulative += probs[i];
+                    if (r < cumulative) {
+                        gameState.prizeDoor = i + 1;
+                        break;
+                    }
+                }
+                logEvent('quantum', `Wavefunction collapsed! Prize materialized at Door ${gameState.prizeDoor}`);
+                
+                // Collapse amplitudes
+                a = [0, 0, 0];
+                a[gameState.prizeDoor - 1] = 1;
+            }
+
+            if (mode === 'trickster') {
+                // Apply phase shift to entangled doors (if any)
+                if (gameState.entangledPair) {
+                    const [d1, d2] = gameState.entangledPair;
+                    p[d1] += params.delta;
+                    p[d2] -= params.delta;
+                    logEvent('quantum', `Trickster applied phase δ=±${params.delta}° to entangled doors ${d1+1}↔${d2+1}`);
+                } else {
+                    // No entanglement - apply random phase chaos
+                    for (let i = 0; i < 3; i++) {
+                        p[i] += (Math.random() - 0.5) * params.delta * 2;
+                    }
+                    logEvent('quantum', `Trickster applied chaotic phase shifts (no entanglement to exploit)`);
+                }
+                
+                // Special: Dirac Sea doors get extra phase interference
+                for (let i = 0; i < 3; i++) {
+                    if (gameState.doorStates[i] === 'dirac') {
+                        p[i] += 90; // Quarter turn interference
+                        logEvent('dirac', `Door ${i+1} Dirac Sea resonance: additional 90° phase`);
+                    }
+                }
+            }
+
+            // Find a door Monty can open (not selected, and low/zero amplitude for coherent)
+            let candidates = [];
+            for (let i = 1; i <= 3; i++) {
+                if (i === selected) continue;
+                
+                if (mode === 'decoherence') {
+                    // Can only open a door without prize
+                    if (i !== gameState.prizeDoor) candidates.push(i);
+                } else {
+                    // Coherent/Trickster: prefer door with lower amplitude, but can't be certain
+                    candidates.push({door: i, amp: a[i-1]});
+                }
+            }
+
+            let openDoor;
+            if (mode === 'decoherence') {
+                openDoor = candidates[Math.floor(Math.random() * candidates.length)];
+            } else {
+                // Sort by amplitude (Monty tries to open a losing door via postselection)
+                candidates.sort((x, y) => x.amp - y.amp);
+                // Weight towards lower amplitude
+                const weights = candidates.map((c, idx) => Math.exp(-idx * 2));
+                const total = weights.reduce((a, b) => a + b, 0);
+                const r = Math.random() * total;
+                let cum = 0;
+                for (let i = 0; i < candidates.length; i++) {
+                    cum += weights[i];
+                    if (r < cum) {
+                        openDoor = candidates[i].door;
+                        break;
+                    }
+                }
+            }
+
+            gameState.openedDoor = openDoor;
+
+            // In coherent mode, set opened door amplitude to 0 and renormalize
+            if (mode !== 'decoherence') {
+                a[openDoor - 1] = 0;
+                const norm = Math.sqrt(a.reduce((sum, x) => sum + x * x, 0));
+                if (norm > 0) {
+                    a = a.map(x => x / norm);
+                }
+                logEvent('quantum', `Weak measurement: Door ${openDoor} amplitude → 0, state renormalized`);
+            }
+
+            gameState.amplitudes = a;
+            gameState.phases = p;
+            gameState.phase = 'choose';
+
+            logEvent('action', `Monty opened Door ${openDoor} — revealing a 🐐`);
+            updateStatus(`<span class="status-step">Step 3:</span> Choose: Stay, Switch, or Quantum Switch?`);
+            updateDisplay();
+            updateDoors();
+        }
+
+        // Player makes final choice
+        function playerChoice(choice) {
+            if (gameState.phase !== 'choose') return;
+
+            const selected = gameState.selectedDoor;
+            const opened = gameState.openedDoor;
+            const other = [1, 2, 3].find(d => d !== selected && d !== opened);
+
+            let a = [...gameState.amplitudes];
+            let p = [...gameState.phases];
+
+            logEvent('action', `Player chose: ${choice.toUpperCase()}`);
+
+            if (choice === 'quantum') {
+                // Apply quantum rotation between remaining doors
+                const thetaRad = params.theta * Math.PI / 180;
+                const cos = Math.cos(thetaRad);
+                const sin = Math.sin(thetaRad);
+
+                const idx1 = selected - 1;
+                const idx2 = other - 1;
+
+                // Apply 2x2 rotation matrix
+                const a1 = a[idx1];
+                const a2 = a[idx2];
+                const p1 = p[idx1] * Math.PI / 180;
+                const p2 = p[idx2] * Math.PI / 180;
+
+                // Complex multiplication considering phases
+                const re1 = a1 * Math.cos(p1);
+                const im1 = a1 * Math.sin(p1);
+                const re2 = a2 * Math.cos(p2);
+                const im2 = a2 * Math.sin(p2);
+
+                // Rotation: [cos -sin; sin cos]
+                const newRe1 = cos * re1 - sin * re2;
+                const newIm1 = cos * im1 - sin * im2;
+                const newRe2 = sin * re1 + cos * re2;
+                const newIm2 = sin * im1 + cos * im2;
+
+                a[idx1] = Math.sqrt(newRe1 * newRe1 + newIm1 * newIm1);
+                a[idx2] = Math.sqrt(newRe2 * newRe2 + newIm2 * newIm2);
+                p[idx1] = Math.atan2(newIm1, newRe1) * 180 / Math.PI;
+                p[idx2] = Math.atan2(newIm2, newRe2) * 180 / Math.PI;
+
+                logEvent('quantum', `Applied U(θ=${params.theta}°) rotation between Doors ${selected} and ${other}`);
+                
+                gameState.amplitudes = a;
+                gameState.phases = p;
+            }
+
+            updateDisplay();
+
+            // Final measurement
+            setTimeout(() => finalMeasurement(choice, selected, other), 500);
+        }
+
+        // Final quantum measurement
+        function finalMeasurement(choice, selected, other) {
+            let a = [...gameState.amplitudes];
+            const p = gameState.phases;
+            
+            // Apply special quantum state effects before measurement
+            for (let i = 0; i < 3; i++) {
+                const stateType = gameState.doorStates[i];
+                
+                if (stateType === 'ground') {
+                    // Ground state: small chance of spontaneous excitation
+                    if (Math.random() < 0.15) {
+                        a[i] *= 2.5;  // Excited!
+                        logEvent('ground', `⚡ Door ${i+1} Ground State spontaneously excited!`);
+                    }
+                }
+                
+                if (stateType === 'dirac') {
+                    // Dirac Sea: negative energy can create particle-antiparticle pair
+                    // 20% chance the "anti-zonk" (virtual prize) becomes real
+                    if (Math.random() < 0.20) {
+                        a[i] *= 1.8;
+                        logEvent('dirac', `🌊 Door ${i+1} Dirac Sea vacuum fluctuation - virtual particle emerged!`);
+                    }
+                    // Phase interference from 180° can destructively interfere
+                    if (Math.abs(p[i]) > 150) {
+                        a[i] *= 0.7;  // Destructive interference
+                    }
+                }
+            }
+            
+            // Handle entanglement correlation
+            if (gameState.entangledPair && !gameState.prizeDoor) {
+                const [d1, d2] = gameState.entangledPair;
+                // Entangled doors are anti-correlated for prize
+                logEvent('entangle', `🔗 Entanglement resolving: Door ${d1+1} ↔ Door ${d2+1} are anti-correlated`);
+            }
+            
+            // Renormalize after modifications
+            const norm = Math.sqrt(a.reduce((sum, x) => sum + x * x, 0));
+            if (norm > 0) a = a.map(x => x / norm);
+            
+            // Calculate probabilities for remaining doors
+            const probs = a.map(x => x * x);
+            
+            // Sample from quantum distribution
+            const r = Math.random();
+            let prizeDoor;
+            
+            if (gameState.prizeDoor) {
+                // Decoherence mode: prize already determined
+                prizeDoor = gameState.prizeDoor;
+            } else {
+                // Sample from distribution
+                let cumulative = 0;
+                for (let i = 0; i < 3; i++) {
+                    cumulative += probs[i];
+                    if (r < cumulative) {
+                        prizeDoor = i + 1;
+                        break;
+                    }
+                }
+            }
+
+            logEvent('quantum', `Final measurement performed. Wavefunction collapsed!`);
+
+            // Determine which door player ends up with
+            let finalDoor;
+            if (choice === 'stay') {
+                finalDoor = selected;
+            } else if (choice === 'switch') {
+                finalDoor = other;
+            } else {
+                // Quantum: player's door is probabilistic based on rotated amplitudes
+                // But for simplicity, we use the higher probability door
+                finalDoor = probs[selected - 1] >= probs[other - 1] ? selected : other;
+                // Actually measure which door player gets
+                const pSelected = probs[selected - 1] / (probs[selected - 1] + probs[other - 1]);
+                finalDoor = Math.random() < pSelected ? selected : other;
+            }
+
+            // Set door contents
+            for (let i = 1; i <= 3; i++) {
+                const content = i === prizeDoor ? '🏆' : '🐐';
+                document.getElementById(`door${i}Content`).textContent = content;
+            }
+
+            gameState.phase = 'reveal';
+            updateDoors();
+
+            // Determine win/loss
+            const won = finalDoor === prizeDoor;
+            
+            gameState.stats.games++;
+            if (won) {
+                gameState.stats.wins++;
+                if (choice === 'quantum') gameState.stats.quantumWins++;
+            }
+            updateStats();
+
+            logEvent('result', `Player chose Door ${finalDoor}, Prize was at Door ${prizeDoor}`);
+            logEvent('result', won ? '🎉 WINNER!' : '🐐 ZONK!');
+
+            // Show result modal
+            setTimeout(() => showResult(won, choice, finalDoor, prizeDoor), 500);
+        }
+
+        // Show result modal
+        function showResult(won, choice, finalDoor, prizeDoor) {
+            const modal = document.getElementById('resultModal');
+            const icon = document.getElementById('modalIcon');
+            const title = document.getElementById('modalTitle');
+            const message = document.getElementById('modalMessage');
+
+            if (won) {
+                icon.textContent = '🏆';
+                title.textContent = 'You Win!';
+                title.className = 'modal-title win';
+                message.textContent = `The quantum state collapsed in your favor! Your ${choice} strategy led you to the prize at Door ${prizeDoor}.`;
+            } else {
+                icon.textContent = '🐐';
+                title.textContent = 'ZONK!';
+                title.className = 'modal-title lose';
+                message.textContent = `The goat materialized at Door ${finalDoor}. The prize was hidden at Door ${prizeDoor}. Quantum fluctuations were not in your favor!`;
+            }
+
+            modal.classList.add('active');
+        }
+
+        // Close modal and reset
+        function closeModal() {
+            document.getElementById('resultModal').classList.remove('active');
+            resetGame();
+        }
+
+        // Reset game
+        function resetGame() {
+            // Clear door contents and styling
+            for (let i = 1; i <= 3; i++) {
+                const door = document.getElementById(`door${i}`);
+                document.getElementById(`door${i}Content`).textContent = '';
+                door.classList.remove('opened', 'selected', 'disabled', 'entangled', 'ground-state', 'dirac-sea');
+            }
+            
+            updateStatus(`<span class="status-step">Step 1:</span> Choose a door to make your initial pick`);
+            initGame();
+        }
+
+        // Update statistics display
+        function updateStats() {
+            const s = gameState.stats;
+            document.getElementById('statGames').textContent = s.games;
+            document.getElementById('statWins').textContent = s.wins;
+            document.getElementById('statWinRate').textContent = 
+                s.games > 0 ? `${(s.wins / s.games * 100).toFixed(0)}%` : '0%';
+            document.getElementById('statQuantumWins').textContent = s.quantumWins;
+        }
+
+        // Log event to console
+        function logEvent(type, message) {
+            const log = document.getElementById('eventLog');
+            const time = new Date().toLocaleTimeString('en-US', { 
+                hour12: false, 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `
+                <span class="log-time">[${time}]</span>
+                <span class="log-${type}">${message}</span>
+            `;
+            
+            log.insertBefore(entry, log.firstChild);
+            
+            // Keep log manageable
+            while (log.children.length > 50) {
+                log.removeChild(log.lastChild);
+            }
+        }
+
+        // Initialize on load
+        window.onload = () => {
+            updateParams();
+            initGame();
+        };
+    </script>
+</body>
+</html>
